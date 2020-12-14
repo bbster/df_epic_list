@@ -1,0 +1,7 @@
+.idea
+.python-version
+.pyc
+__pycache__
+db.sqlite3
+htmlcov
+.coverage
