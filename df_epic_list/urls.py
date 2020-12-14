@@ -19,6 +19,6 @@ from django.urls import path, include
 from df_epic_list import views
 
 urlpatterns = [
-    path('test/', views.DF_open_api_test.as_view())
+    path('epic-list/', views.EpicList.as_view())
 
 ]
