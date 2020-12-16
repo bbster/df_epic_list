@@ -8,7 +8,6 @@ from rest_framework.views import APIView
 
 global api_key
 global server
-global characterId
 api_key = 'IY60cbg7tdVOOcWifeQBnp5PPHXFjbl1'
 server_name = 'cain'
 
@@ -46,9 +45,12 @@ class EpicList(APIView):
         new_data = {}
         characterId = []
         quantity = []
+        test = {}
 
-        # 페이지에서 닉네임 입력 받는 값
-        character_names = ['패호거너', 'wide_mecanic']
+        # 페이지에서 닉네임 입력 받는 값 // type 리스트 형태
+        # character_names = ['wide_mecanic', 'wide_seraph', 'wide_saint', 'wide_swords', 'wide_prime']
+        # character_names = ['광부캐아님', '버프편한세상', '창으로빠따질', '샤이쿠마', '샤이위즈']
+        character_names = ['포니테일녀', '빙교리다요', '세인트다요']
 
         for character_name in character_names:
 
@@ -62,16 +64,16 @@ class EpicList(APIView):
             encoding = response.info().get_content_charset('utf8')
             character_data = json.loads(read_data.decode(encoding))
 
-            for i in character_data['rows']:
-                new_data = i
+            for character_row_data in character_data['rows']:
+                new_data = character_row_data
                 value = new_data['characterId']
 
             characterId.append(value)
-            print('characterId: \n', characterId)
+            # print('characterId: \n', characterId)
 
-        for i in characterId:
-
-            url = 'https://api.neople.co.kr/df/servers/'+server_name+'/characters/'+i+'/timeline?' \
+        for character_index in characterId:
+            
+            url = 'https://api.neople.co.kr/df/servers/'+server_name+'/characters/'+character_index+'/timeline?' \
                   'limit=<limit>&code=513&apikey='+api_key
 
             request = urllib.request.Request(url)
@@ -80,21 +82,27 @@ class EpicList(APIView):
             read_data = response.read()
             encoding = response.info().get_content_charset('utf8')
             timeline_list = json.loads(read_data.decode(encoding))
-            print('timeline_list:  \n', timeline_list['timeline'])
-            print()
-            print(type(timeline_list))
+            # print('timeline_list:  \n', timeline_list['timeline'])
+
+            # print(type(timeline_list))
             timeline_rows = timeline_list['timeline']
-            print('timeline_rows: \n', timeline_rows)
+            # print('timeline_rows: \n', timeline_rows)
             timeline_datas = timeline_rows['rows']
-            print('timeline_data: \n', timeline_datas[0])
+            # print('timeline_data: \n', timeline_datas[0])
             for timeline_data in timeline_datas:
                 dungeon_item_datas = timeline_data
                 test2 = dungeon_item_datas['data']
+                
                 if test2['itemRarity'] == '에픽':
-                    quantity = character_name, len(test2)
-                    print('에픽아이템', character_name, test2)
+                    quantity.append(test2.values())
+                    test = len(quantity)
 
+                    # print('에픽아이템', character_name, test2)
                 else:
                     print('에픽 아이템이 아닙니다.')
 
-        return Response(quantity, status=status.HTTP_200_OK)
+            print('quantity: ', len(quantity), type(quantity))
+            print()
+            print('character_name: ', character_name, '\n', 'quantity: ', test, type(quantity))
+
+        return Response({character_name: test}, status=status.HTTP_200_OK)
