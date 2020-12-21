@@ -1,5 +1,6 @@
 import json
 import urllib
+from datetime import datetime
 from urllib import parse
 
 from rest_framework import status
@@ -48,9 +49,10 @@ class EpicList(APIView):
         test = {}
 
         # 페이지에서 닉네임 입력 받는 값 // type 리스트 형태
-        # character_names = ['wide_mecanic', 'wide_seraph', 'wide_saint', 'wide_swords', 'wide_prime']
+        character_names = ['wide_mecanic', 'wide_seraph', 'wide_saint', 'wide_swords', 'wide_prime', 'wide_enchan']
         # character_names = ['광부캐아님', '버프편한세상', '창으로빠따질', '샤이쿠마', '샤이위즈']
-        character_names = ['포니테일녀', '빙교리다요', '세인트다요']
+        # character_names = ['패호거너', '광휘의수르야', '니들버프안줌', '흑한의찬드라', '은유시아']
+        # character_names = ['포니테일녀', '빙교리다요', '세인트다요']
 
         for character_name in character_names:
 
@@ -91,18 +93,17 @@ class EpicList(APIView):
             # print('timeline_data: \n', timeline_datas[0])
             for timeline_data in timeline_datas:
                 dungeon_item_datas = timeline_data
-                test2 = dungeon_item_datas['data']
+                items = dungeon_item_datas['data']
                 
-                if test2['itemRarity'] == '에픽':
-                    quantity.append(test2.values())
-                    test = len(quantity)
+                if items['itemRarity'] == '에픽':
+                    quantity.append(items.values())
+                    epic_quantity = len(quantity)
 
                     # print('에픽아이템', character_name, test2)
                 else:
                     print('에픽 아이템이 아닙니다.')
 
-            print('quantity: ', len(quantity), type(quantity))
-            print()
-            print('character_name: ', character_name, '\n', 'quantity: ', test, type(quantity))
+            print('quantity: ', len(epic_quantity), type(epic_quantity))
+            print('character_name: ', character_names, '\n', 'quantity: ', test, type(epic_quantity))
 
-        return Response({character_name: test}, status=status.HTTP_200_OK)
+        return Response(epic_quantity, status=status.HTTP_200_OK)
