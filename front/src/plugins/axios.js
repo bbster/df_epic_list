@@ -3,7 +3,7 @@ import Axios from 'axios';
 
 export default Vue.install = function (Vue) {
     const instance = Axios.create({
-        baseURL: 'localhost:8000',
+        baseURL: 'http://localhost:8000',
         timeout: 3000,
         post: {
             "Content-Type": "application/json",
