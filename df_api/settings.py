@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/3.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.0/ref/settings/
 """
-
+import json
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -125,3 +125,11 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 CORS_ORIGIN_ALLOW_ALL = True
+
+
+secret_file = os.path.join(BASE_DIR, 'secret.json')
+with open(secret_file) as f:
+    secrets = json.loads(f.read())
+
+DF_API_KEY = secrets['DF_API_KEY']
+

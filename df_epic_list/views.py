@@ -1,53 +1,69 @@
 import json
 import urllib
-from datetime import datetime
-from urllib import parse
+from urllib.request import Request
 
+from django.conf import settings
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-global api_key
-global server
-api_key = 'IY60cbg7tdVOOcWifeQBnp5PPHXFjbl1'
+from core.utils import now, convert_str_to_datetime
+
 server_name = 'cain'
 
 
 class EpicList(APIView):
+    def convert_start_time(self, datetime_str):
+        start_date = convert_str_to_datetime(datetime_str)
+        if not start_date:
+            return None
+        return start_date.strftime('%Y%m%dT0000')
 
-    def get(self, request):
+    def convert_end_time(self, datetime):
+        return datetime.strftime('%Y%m%dT%H%M')
 
-        new_data = {}
+    def user_info(self, request):
         characterId = []
-        quantity = []
-        test = {}
 
-        # 페이지에서 닉네임 입력 받는 값 // type 리스트 형태
-        character_names = ['wide_mecanic', 'wide_seraph', 'wide_saint', 'wide_swords', 'wide_enchan', 'wide_blaster']
-        # character_names = ['광부캐아님', '버프편한세상', '창으로빠따질', '샤이쿠마', '샤이위즈']
-        # character_names = ['패호거너', '광휘의수르야', '니들버프안줌', '흑한의찬드라', '은유시아']
-        # character_names = ['포니테일녀', '빙교리다요', '세인트다요']
+        # 페이지에서 닉네임 입력 받는 값
+        character_name = ['wide_mecanic', 'wide_seraph']
 
-        for character_name in character_names:
+        for i in character_name:
+            url = f'https://api.neople.co.kr/df/servers/{server_name}/characters?characterName={i}&jobGrowId=<jobGrowId>&limit=<limit>&wordType=<wordType>&apikey={settings.DF_API_KEY}'
 
-            url = 'https://api.neople.co.kr/df/servers/' + server_name + '/characters?characterName=' \
-                  + parse.quote(character_name) + '&jobGrowId=<jobGrowId>&limit=<limit>&wordType=<wordType>&apikey=' + api_key
-
-            request = urllib.request.Request(url)
+            request = Request(url)
             response = urllib.request.urlopen(request)
 
             read_data = response.read()
             encoding = response.info().get_content_charset('utf8')
             character_data = json.loads(read_data.decode(encoding))
 
-            for character_row_data in character_data['rows']:
-                new_data = character_row_data
+            for i in character_data['rows']:
+                new_data = i
                 value = new_data['characterId']
 
             characterId.append(value)
+            return characterId
 
-        for character_index in characterId:
-            url = 'https://api.neople.co.kr/df/servers/' + server_name + '/characters/' + character_index + '/timeline?code=513&apikey=' + api_key
+    def get(self, request):
+        start_date = request.query_params.get('start_date', None)  # 2020-12-01 과 같은 포맷으로 입력
+
+        if not start_date:
+            return Response('start_date 파라미터는 필수 입력값입니다.', status=status.HTTP_400_BAD_REQUEST)
+
+        converted_start_date = self.convert_start_time(start_date)
+
+        if not start_date:
+            return Response(f'start_date 값 {start_date} 은 datetime 으로 변환할 수 없습니다.', status=status.HTTP_400_BAD_REQUEST)
+
+        converted_end_date = self.convert_end_time(now())
+
+        character_ids = self.user_info(request)
+        quantity = []
+        epic_quantity = None
+
+        for character_id in character_ids:
+            url = f'https://api.neople.co.kr/df/servers/{server_name}/characters/{character_id}/timeline?startDate={converted_start_date}&endDate={converted_end_date}&code=513&apikey={settings.DF_API_KEY}'
 
             request = urllib.request.Request(url)
             response = urllib.request.urlopen(request)
@@ -71,6 +87,10 @@ class EpicList(APIView):
                     print('에픽 아이템이 아닙니다.')
 
         print('quantity: ', epic_quantity, type(epic_quantity))
-        print('character_name: ', character_names)
 
-        return Response(epic_quantity, status=status.HTTP_200_OK)
+        result = {
+            'count': len(quantity),
+            'results': quantity
+        }
+
+        return Response(result, status=status.HTTP_200_OK)
