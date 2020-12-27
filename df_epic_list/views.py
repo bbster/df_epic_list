@@ -65,6 +65,7 @@ class EpicList(APIView):
         items_object = []
         item_image_object = []
         item_rarity_object = []
+        item_image_url = 'https://img-api.neople.co.kr/df/items/'
 
         filter_item_type_weapon = []
         filter_item_type_not_weapon = []
@@ -91,13 +92,13 @@ class EpicList(APIView):
 
                     quantity.append(items.values())
 
-                    item_image_object.append(items['itemId'])
+                    item_image_object.append(item_image_url+items['itemId'])
 
                     item_names = items['itemName']
                     item_rarity_object.append(item_names)
 
                 else:
-                    print('에픽 아이템이 아닙니다.')
+                    pass
 
             for filter_item_type in item_rarity_object:
                 url = f'https://api.neople.co.kr/df/items?itemName={parse.quote(filter_item_type)}&apikey={settings.DF_API_KEY}'
@@ -112,14 +113,10 @@ class EpicList(APIView):
 
                 for filter_item_row_data in filtering_item_rows_data:
                     if filter_item_row_data['itemType'] == '무기':
-                        # filter_item_type_weapon.append(filter_item_row_data.values())
                         filter_item_type_weapon.append(filter_item_row_data)
-                        print('filter_item_type_weapon:', filter_item_type_weapon)
 
                     else:
-                        # filter_item_type_not_weapon.append(filter_item_row_data.values())
                         filter_item_type_not_weapon.append(filter_item_row_data)
-                        print('filter_item_type_not_weapon:', filter_item_type_not_weapon)
 
         result = {
             'count': len(quantity),
