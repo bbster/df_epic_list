@@ -23,13 +23,13 @@ class EpicList(APIView):
         return datetime.strftime('%Y%m%dT%H%M')
 
     def user_info(self, request):
-        characterId = []
+        character_id = []
 
         # 페이지에서 닉네임 입력 받는 값
-        character_name = ['wide_mecanic', 'wide_seraph']
+        character_names = ['wide_mecanic']
 
-        for i in character_name:
-            url = f'https://api.neople.co.kr/df/servers/{server_name}/characters?characterName={i}&jobGrowId=<jobGrowId>&limit=<limit>&wordType=<wordType>&apikey={settings.DF_API_KEY}'
+        for character_name in character_names:
+            url = f'https://api.neople.co.kr/df/servers/{server_name}/characters?characterName={character_name}&jobGrowId=<jobGrowId>&limit=<limit>&wordType=<wordType>&apikey={settings.DF_API_KEY}'
 
             request = Request(url)
             response = urllib.request.urlopen(request)
@@ -38,12 +38,12 @@ class EpicList(APIView):
             encoding = response.info().get_content_charset('utf8')
             character_data = json.loads(read_data.decode(encoding))
 
-            for i in character_data['rows']:
-                new_data = i
-                value = new_data['characterId']
+            for character_row_data in character_data['rows']:
 
-            characterId.append(value)
-            return characterId
+                character_index_data = character_row_data['characterId']
+
+            character_id.append(character_index_data)
+            return character_id
 
     def get(self, request):
         start_date = request.query_params.get('start_date', None)  # 2020-12-01 과 같은 포맷으로 입력
@@ -73,24 +73,30 @@ class EpicList(APIView):
             timeline_list = json.loads(read_data.decode(encoding))
 
             timeline_rows = timeline_list['timeline']
-
             timeline_datas = timeline_rows['rows']
+
+            item_id = []
+            items_object = []
+            item_image_object = []
+            image_url = 'https://img-api.neople.co.kr/df/items/'
 
             for timeline_data in timeline_datas:
                 dungeon_item_datas = timeline_data
                 items = dungeon_item_datas['data']
 
                 if items['itemRarity'] == '에픽':
+                    print(items['itemId'], type(items))
+                    items_object.append(items)
                     quantity.append(items.values())
-                    epic_quantity = len(quantity)
+                    item_image_object.append(image_url + items['itemId'])
+
                 else:
                     print('에픽 아이템이 아닙니다.')
 
-        print('quantity: ', epic_quantity, type(epic_quantity))
-
         result = {
             'count': len(quantity),
-            'results': quantity
+            'items_object': items_object,
+             'item_image_object': item_image_object
         }
 
         return Response(result, status=status.HTTP_200_OK)
