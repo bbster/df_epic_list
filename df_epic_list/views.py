@@ -1,6 +1,7 @@
 import json
 import urllib
 from urllib.request import Request
+from urllib import parse
 
 from django.conf import settings
 from rest_framework import status
@@ -8,8 +9,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.utils import now, convert_str_to_datetime
-
-server_name = 'cain'
 
 
 class EpicList(APIView):
@@ -23,13 +22,15 @@ class EpicList(APIView):
         return datetime.strftime('%Y%m%dT%H%M')
 
     def user_info(self, request):
+        global server_name
+        server_name = 'cain'
         character_id = []
 
         # 페이지에서 닉네임 입력 받는 값
         character_names = ['wide_mecanic']
 
         for character_name in character_names:
-            url = f'https://api.neople.co.kr/df/servers/{server_name}/characters?characterName={character_name}&jobGrowId=<jobGrowId>&limit=<limit>&wordType=<wordType>&apikey={settings.DF_API_KEY}'
+            url = f'https://api.neople.co.kr/df/servers/{server_name}/characters?characterName={parse.quote(character_name)}&jobGrowId=<jobGrowId>&limit=<limit>&wordType=<wordType>&apikey={settings.DF_API_KEY}'
 
             request = Request(url)
             response = urllib.request.urlopen(request)
@@ -60,7 +61,13 @@ class EpicList(APIView):
 
         character_ids = self.user_info(request)
         quantity = []
-        epic_quantity = None
+
+        items_object = []
+        item_image_object = []
+        item_rarity_object = []
+
+        filter_item_type_weapon = []
+        filter_item_type_not_weapon = []
 
         for character_id in character_ids:
             url = f'https://api.neople.co.kr/df/servers/{server_name}/characters/{character_id}/timeline?startDate={converted_start_date}&endDate={converted_end_date}&code=513&apikey={settings.DF_API_KEY}'
@@ -75,28 +82,51 @@ class EpicList(APIView):
             timeline_rows = timeline_list['timeline']
             timeline_datas = timeline_rows['rows']
 
-            item_id = []
-            items_object = []
-            item_image_object = []
-            image_url = 'https://img-api.neople.co.kr/df/items/'
-
             for timeline_data in timeline_datas:
                 dungeon_item_datas = timeline_data
                 items = dungeon_item_datas['data']
 
                 if items['itemRarity'] == '에픽':
-                    print(items['itemId'], type(items))
                     items_object.append(items)
+
                     quantity.append(items.values())
-                    item_image_object.append(image_url + items['itemId'])
+
+                    item_image_object.append(items['itemId'])
+
+                    item_names = items['itemName']
+                    item_rarity_object.append(item_names)
 
                 else:
                     print('에픽 아이템이 아닙니다.')
 
+            for filter_item_type in item_rarity_object:
+                url = f'https://api.neople.co.kr/df/items?itemName={parse.quote(filter_item_type)}&apikey={settings.DF_API_KEY}'
+
+                request = urllib.request.Request(url)
+                response = urllib.request.urlopen(request)
+
+                read_data = response.read()
+                encoding = response.info().get_content_charset('utf8')
+                filtering_item_data = json.loads(read_data.decode(encoding))
+                filtering_item_rows_data = filtering_item_data['rows']
+
+                for filter_item_row_data in filtering_item_rows_data:
+                    if filter_item_row_data['itemType'] == '무기':
+                        # filter_item_type_weapon.append(filter_item_row_data.values())
+                        filter_item_type_weapon.append(filter_item_row_data)
+                        print('filter_item_type_weapon:', filter_item_type_weapon)
+
+                    else:
+                        # filter_item_type_not_weapon.append(filter_item_row_data.values())
+                        filter_item_type_not_weapon.append(filter_item_row_data)
+                        print('filter_item_type_not_weapon:', filter_item_type_not_weapon)
+
         result = {
             'count': len(quantity),
             'items_object': items_object,
-             'item_image_object': item_image_object
+            'item_image_object': item_image_object,
+            'item_wepon_type_object': filter_item_type_weapon,
+            'item_not_wepon_type_object': filter_item_type_not_weapon,
         }
 
         return Response(result, status=status.HTTP_200_OK)

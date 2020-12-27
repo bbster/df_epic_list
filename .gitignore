@@ -5,6 +5,7 @@ __pycache__
 db.sqlite3
 htmlcov
 .coverage
+secret.json
 
 # vue files
 .DS_Store
