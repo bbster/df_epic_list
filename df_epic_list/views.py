@@ -28,6 +28,8 @@ class EpicList(APIView):
 
         # 페이지에서 닉네임 입력 받는 값
         character_names = ['wide_mecanic']
+        # 다중 input tag를 리스트형태로 받아오는 기능
+        # character_names = request.POST.getlist('input name')
 
         for character_name in character_names:
             url = f'https://api.neople.co.kr/df/servers/{server_name}/characters?characterName={parse.quote(character_name)}&jobGrowId=<jobGrowId>&limit=<limit>&wordType=<wordType>&apikey={settings.DF_API_KEY}'
@@ -44,7 +46,8 @@ class EpicList(APIView):
                 character_index_data = character_row_data['characterId']
 
             character_id.append(character_index_data)
-            return character_id
+
+        return character_id
 
     def get(self, request):
         start_date = request.query_params.get('start_date', None)  # 2020-12-01 과 같은 포맷으로 입력
@@ -60,6 +63,7 @@ class EpicList(APIView):
         converted_end_date = self.convert_end_time(now())
 
         character_ids = self.user_info(request)
+
         quantity = []
 
         items_object = []
