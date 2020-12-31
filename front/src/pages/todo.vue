@@ -13,7 +13,10 @@
       </li>
     </ul>
     <ul>
-      <li v-for="{ data } in datas" :key="data">
+      {{
+        aaa
+      }}
+      <li v-for="{ data } in aaa" :key="data">
         {{ data.count }}
         {{ data.items_object }}
       </li>
@@ -25,6 +28,7 @@
 export default {
   data() {
     return {
+      aaa: "",
       todos: [
         {
           name: "청소",
@@ -42,16 +46,7 @@ export default {
     };
   },
   async mounted() {
-    console.log(await this.$axios.get("/list/quantity/?start_date=2020-10-01"));
-  },
-  created: function () {
-    const baseURI = "http://localhost:8000";
-    $axios
-      .get("${baseURI}/list/quantity/?start_date=2020-10-01")
-      .then((result) => {
-        console.log(result);
-        this.datas = result.data;
-      });
+    this.aaa = await this.$axios.get("/list/quantity/?start_date=2020-10-01");
   },
 };
 </script>

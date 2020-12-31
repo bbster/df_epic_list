@@ -1,5 +1,6 @@
 import json
 import urllib
+
 from urllib.request import Request
 from urllib import parse
 
@@ -7,7 +8,6 @@ from django.conf import settings
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 from core.utils import now, convert_str_to_datetime
 
 
@@ -27,7 +27,9 @@ class EpicList(APIView):
         character_id = []
 
         # 페이지에서 닉네임 입력 받는 값
-        character_names = ['wide_mecanic']
+        global character_names
+        character_names = {'wide_mecanic'}
+
         # 다중 input tag를 리스트형태로 받아오는 기능
         # character_names = request.POST.getlist('input name')
 
@@ -45,12 +47,13 @@ class EpicList(APIView):
 
                 character_index_data = character_row_data['characterId']
 
-            character_id.append(character_index_data)
+                character_id.append(character_index_data)
 
         return character_id
 
-    def get(self, request):
+    def time_line_data(self, request):
         start_date = request.query_params.get('start_date', None)  # 2020-12-01 과 같은 포맷으로 입력
+        start_date = '2020-11-11'
 
         if not start_date:
             return Response('start_date 파라미터는 필수 입력값입니다.', status=status.HTTP_400_BAD_REQUEST)
@@ -64,15 +67,11 @@ class EpicList(APIView):
 
         character_ids = self.user_info(request)
 
-        quantity = []
-
         items_object = []
-        item_image_object = []
-        item_rarity_object = []
-        item_image_url = 'https://img-api.neople.co.kr/df/items/'
 
-        filter_item_type_weapon = []
-        filter_item_type_not_weapon = []
+        item_image_object = []
+        item_image_url = 'https://img-api.neople.co.kr/df/items/'
+        item_rarity_object = []
 
         for character_id in character_ids:
             url = f'https://api.neople.co.kr/df/servers/{server_name}/characters/{character_id}/timeline?startDate={converted_start_date}&endDate={converted_end_date}&code=513&apikey={settings.DF_API_KEY}'
@@ -94,40 +93,50 @@ class EpicList(APIView):
                 if items['itemRarity'] == '에픽':
                     items_object.append(items)
 
-                    quantity.append(items.values())
-
-                    item_image_object.append(item_image_url+items['itemId'])
+                    item_image_object.append(item_image_url + items['itemId'])
 
                     item_names = items['itemName']
                     item_rarity_object.append(item_names)
 
                 else:
-                    pass
+                    print('에픽 아님 아무튼 아님')
+            result = {'item_rarity_object': item_rarity_object,
+                      'item_image_object': item_image_object
+                      }
 
-            for filter_item_type in item_rarity_object:
-                url = f'https://api.neople.co.kr/df/items?itemName={parse.quote(filter_item_type)}&apikey={settings.DF_API_KEY}'
+        return result
 
-                request = urllib.request.Request(url)
-                response = urllib.request.urlopen(request)
+    def get(self, request):
+        item_timeline_object = self.time_line_data(request)
 
-                read_data = response.read()
-                encoding = response.info().get_content_charset('utf8')
-                filtering_item_data = json.loads(read_data.decode(encoding))
-                filtering_item_rows_data = filtering_item_data['rows']
+        filter_item_type_weapon = []
+        filter_item_type_not_weapon = []
 
-                for filter_item_row_data in filtering_item_rows_data:
-                    if filter_item_row_data['itemType'] == '무기':
-                        filter_item_type_weapon.append(filter_item_row_data)
+        for filter_item_type in item_timeline_object['item_rarity_object']:
+            url = f'https://api.neople.co.kr/df/items?itemName={parse.quote(filter_item_type)}&apikey={settings.DF_API_KEY}'
 
-                    else:
-                        filter_item_type_not_weapon.append(filter_item_row_data)
+            request = urllib.request.Request(url)
+            response = urllib.request.urlopen(request)
 
+            read_data = response.read()
+            encoding = response.info().get_content_charset('utf8')
+            filtering_item_data = json.loads(read_data.decode(encoding))
+            filtering_item_rows_data = filtering_item_data['rows']
+
+            for filter_item_row_data in filtering_item_rows_data:
+                if filter_item_row_data['itemType'] == '무기':
+                    filter_item_type_weapon.append(filter_item_row_data)
+
+                else:
+                    filter_item_type_not_weapon.append(filter_item_row_data)
+
+        item_image_url = 'https://img-api.neople.co.kr/df/items/'
         result = {
-            'count': len(quantity),
-            'items_object': items_object,
-            'item_image_object': item_image_object,
+            'character_name': character_names,
+            'item_image_object': item_timeline_object['item_image_object'],
             'item_wepon_type_object': filter_item_type_weapon,
             'item_not_wepon_type_object': filter_item_type_not_weapon,
+            'count': len(filter_item_type_weapon) + len(filter_item_type_not_weapon),
         }
 
         return Response(result, status=status.HTTP_200_OK)
